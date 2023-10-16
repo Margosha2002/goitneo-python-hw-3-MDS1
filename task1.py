@@ -38,7 +38,3 @@ def get_birthdays_per_week(users):
             print(f"{day}: {', '.join(birthdays_per_week[day])}")
 
     return birthdays_per_week
-
-
-user = [{"name": "Bill Gates", "birthday": datetime(1955, 10, 21)}]
-res = get_birthdays_per_week(user)
