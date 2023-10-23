@@ -1,40 +1,81 @@
-from collections import OrderedDict
-from datetime import datetime, timedelta
+def input_error(func):
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ValueError:
+            return "Give me name and phone please."
+        except IndexError:
+            return "Give me a name please"
+
+    return inner
 
 
-def get_birthdays_per_week(users):
-    birthdays_per_week = OrderedDict(
-        [
-            ("Monday", []),
-            ("Tuesday", []),
-            ("Wednesday", []),
-            ("Thursday", []),
-            ("Friday", []),
-        ]
-    )
+@input_error
+def parse_input(user_input):
+    cmd, *args = user_input.split()
+    cmd = cmd.strip().lower()
+    return cmd, *args
 
-    today = datetime.today().date()
 
-    for user in users:
-        name = user["name"]
-        birthday = user["birthday"].date()
+@input_error
+def add_contact(args, contacts):
+    name, phone = args
+    contacts[name] = phone
+    return "Contact added."
 
-        birthday_this_year = birthday.replace(year=today.year)
-        if birthday_this_year < today:
-            birthday_this_year = birthday_this_year.replace(year=today.year + 1)
 
-        delta_days = (birthday_this_year - today).days
+@input_error
+def get_contact(args, contacts):
+    name = args[0]
+    if not contacts.get(name):
+        return "Contact doesn't exist."
+    return f"{name}: {contacts[name]}"
 
-        birthday_weekday = birthday_this_year.strftime("%A")
 
-        if delta_days <= 7:
-            if birthday_weekday not in birthdays_per_week.keys():
-                birthdays_per_week["Monday"].append(name)
-            else:
-                birthdays_per_week[birthday_weekday].append(name)
+@input_error
+def change_contact(args, contacts):
+    name, phone = args
+    if not contacts.get(name):
+        return "Contact doesn't exist."
+    contacts[name] = phone
+    return "Contact changed."
 
-    for day in birthdays_per_week.keys():
-        if len(birthdays_per_week[day]):
-            print(f"{day}: {', '.join(birthdays_per_week[day])}")
 
-    return birthdays_per_week
+def get_all_contacts(contacts):
+    for name, phone in contacts.items():
+        print(f"{name}: {phone}")
+
+    return "Contacts showed."
+
+
+def main():
+    contacts = {}
+    print("Welcome to the assistant bot!")
+    while True:
+        user_input = input("Enter a command: ")
+        command = ""
+        args = []
+        try:
+            command, *args = parse_input(user_input)
+        except:
+            pass
+
+        if command in ["close", "exit"]:
+            print("Good bye!")
+            break
+        elif command == "hello":
+            print("How can I help you?")
+        elif command == "add":
+            print(add_contact(args, contacts))
+        elif command == "phone":
+            print(get_contact(args, contacts))
+        elif command == "change":
+            print(change_contact(args, contacts))
+        elif command == "all":
+            get_all_contacts(contacts)
+        else:
+            print("Invalid command.")
+
+
+if __name__ == "__main__":
+    main()

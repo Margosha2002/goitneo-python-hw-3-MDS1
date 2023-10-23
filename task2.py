@@ -1,82 +1,114 @@
-def parse_input(user_input):
-    try:
-        cmd, *args = user_input.split()
-        cmd = cmd.strip().lower()
-        return cmd, *args
-    except:
-        pass
+from collections import UserDict
 
 
-def add_contact(args, contacts):
-    name = ""
-    phone = ""
-    try:
-        name, phone = args
-    except:
-        return "Invalid args."
-    contacts[name] = phone
-    return "Contact added."
+class InvalidNameError(Exception):
+    pass
 
 
-def get_contact(args, contacts):
-    name = ""
-    try:
-        name = args[0]
-    except:
-        return "Invalid args."
-    if not contacts.get(name):
-        return "Contact doesn't exist."
-    return f"{name}: {contacts[name]}"
+class InvalidPhoneError(Exception):
+    pass
 
 
-def change_contact(args, contacts):
-    name = ""
-    phone = ""
-    try:
-        name, phone = args
-    except:
-        return "Invalid args."
-    if not contacts.get(name):
-        return "Contact doesn't exist."
-    contacts[name] = phone
-    return "Contact changed."
+class PhoneNotFoundError(Exception):
+    pass
 
 
-def get_all_contacts(contacts):
-    for name, phone in contacts.items():
-        print(f"{name}: {phone}")
-
-    return "Contacts showed."
+class RecordNotFoundError(Exception):
+    pass
 
 
-def main():
-    contacts = {}
-    print("Welcome to the assistant bot!")
-    while True:
-        user_input = input("Enter a command: ")
-        command = ""
-        args = []
+class Field:
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return str(self.value)
+
+
+class Name(Field):
+    def __init__(self, value):
+        super().__init__(value)
+        if not self.is_valid():
+            raise InvalidNameError
+
+    def is_valid(self):
+        return bool(self.value)
+
+
+class Phone(Field):
+    def __init__(self, value):
+        super().__init__(value)
+        if not self.is_valid():
+            raise InvalidPhoneError
+
+    def is_valid(self):
         try:
-            command, *args = parse_input(user_input)
+            int(self.value)
         except:
-            pass
+            return False
 
-        if command in ["close", "exit"]:
-            print("Good bye!")
-            break
-        elif command == "hello":
-            print("How can I help you?")
-        elif command == "add":
-            print(add_contact(args, contacts))
-        elif command == "phone":
-            print(get_contact(args, contacts))
-        elif command == "change":
-            print(change_contact(args, contacts))
-        elif command == "all":
-            get_all_contacts(contacts)
-        else:
-            print("Invalid command.")
+        return len(self.value) == 10
 
 
-if __name__ == "__main__":
-    main()
+class Record:
+    def __init__(self, name):
+        self.name = Name(name)
+        self.phones = []
+
+    def __get_phones_strings(self):
+        phones = []
+
+        for item in self.phones:
+            phones.append(str(item))
+
+        return phones
+
+    def add_phone(self, phone):
+        self.phones.append(Phone(phone))
+
+    def remove_phone(self, phone):
+        phones = self.__get_phones_strings()
+
+        if not phone in phones:
+            raise PhoneNotFoundError
+
+        index = phones.index(phone)
+        self.phones.pop(index)
+
+    def edit_phone(self, phone, new_phone):
+        phones = self.__get_phones_strings()
+
+        if not phone in phones:
+            raise PhoneNotFoundError
+
+        index = phones.index(phone)
+        self.phones[index] = Phone(new_phone)
+
+    def find_phone(self, phone):
+        phones = self.__get_phones_strings()
+
+        if not phone in phones:
+            raise PhoneNotFoundError
+
+        index = phones.index(phone)
+        return self.phones[index]
+
+    def __str__(self):
+        return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
+
+
+class AddressBook(UserDict):
+    def add_record(self, record: Record):
+        self.data[str(record.name)] = record
+
+    def find(self, name):
+        try:
+            return self.data[name]
+        except KeyError:
+            raise RecordNotFoundError
+
+    def delete(self, name):
+        try:
+            del self.data[name]
+        except KeyError:
+            raise RecordNotFoundError
